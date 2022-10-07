@@ -51,7 +51,9 @@ def process_filters(filters_input):
             applied_filters += "&{}.fieldName={}&{}.key={}".format(filter, field, filter, key)
     print("Filters: {}".format(filters))
 
-    return filters, display_filters, applied_filters
+    print(f'Display filters: {display_filters}, Applied Filters: {applied_filters}')
+    # return filters, display_filters, applied_filters
+    return {}
 
 
 
@@ -94,10 +96,15 @@ def query():
     print("query obj: {}".format(query_obj))
 
     #### Step 4.b.ii
-    response = None   # TODO: Replace me with an appropriate call to OpenSearch
-    # Postprocess results here if you so desire
+    # response = None   # TODO: Replace me with an appropriate call to OpenSearch
+    # # Postprocess results here if you so desire
 
-    #print(response)
+    response = opensearch.search(
+        body = query_obj,
+        index = 'bbuy_products'
+    )
+
+    # print(response)
     if error is None:
         return render_template("search_results.jinja2", query=user_query, search_response=response,
                                display_filters=display_filters, applied_filters=applied_filters,
@@ -108,14 +115,38 @@ def query():
 
 def create_query(user_query, filters, sort="_score", sortDir="desc"):
     print("Query: {} Filters: {} Sort: {}".format(user_query, filters, sort))
+    process_filters(filters)
     query_obj = {
         'size': 10,
         "query": {
-            "match_all": {} # Replace me with a query that both searches and filters
+            # "match_all": {} # Replace me with a query that both searches and filters
+            "bool": {
+                "should": [
+                    {
+                        "query_string": {
+                            "fields": ["name", "shortDescription", "longDescription"], 
+                            "query": user_query,
+                            "phrase_slop": 3
+                        }
+                    }
+                ],
+                # "filter": [
+                    
+                #         process_filters(filters)
+                
+                # ]
+            }
         },
-        "aggs": {
-            #### Step 4.b.i: create the appropriate query and aggregations here
+        "sort": [
+            {
+                sort: {
+                    "order": sortDir
+                }
+            }
+        ]
+        # "aggs": {
+        #     #### Step 4.b.i: create the appropriate query and aggregations here
 
-        }
+        # }
     }
     return query_obj

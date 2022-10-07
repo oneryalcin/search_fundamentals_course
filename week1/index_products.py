@@ -85,7 +85,15 @@ def get_opensearch():
     port = 9200
     auth = ('admin', 'admin')
     #### Step 2.a: Create a connection to OpenSearch
-    client = None
+    client = OpenSearch(
+        hosts=[{'host': host, 'port': port}],
+        http_compress=True,  # enables gzip compression for request bodies
+        http_auth=auth,
+        use_ssl=True,
+        verify_certs=False,
+        ssl_assert_hostname=False,
+        ssl_show_warn=False,
+    )
     return client
 
 
@@ -103,19 +111,41 @@ def index_file(file, index_name):
             xpath_expr = mappings[idx]
             key = mappings[idx + 1]
             doc[key] = child.xpath(xpath_expr)
-        #print(doc)
+
         if 'productId' not in doc or len(doc['productId']) == 0:
             continue
-        #### Step 2.b: Create a valid OpenSearch Doc and bulk index 2000 docs at a time
-        the_doc = None
-        docs.append(the_doc)
 
+        #### Step 2.b: Create a valid OpenSearch Doc and bulk index 2000 docs at a time
+        the_doc = {
+            '_index': index_name,
+            '_source': doc
+        }
+        docs.append(the_doc)
+        
+        # Bulk send to OpenSearch once we 
+        if len(docs) % 2000 == 0:
+            bulk(client, docs, request_timeout=120)
+
+            docs_indexed += len(docs)
+            logger.info(f'So far indexed {docs_indexed} documents to {index_name} index')
+            
+            docs = []
+    
+    if docs:
+        bulk(client, docs, request_timeout=120)
+        
+        docs_indexed += len(docs)
+        logger.info(f'One last time sending docs to OpenSearch {index_name}')
+            
+    
+
+    logger.info(f'Indexing complete. {docs_indexed} docs sent to {index_name} index')
     return docs_indexed
 
 @click.command()
 @click.option('--source_dir', '-s', help='XML files source directory')
 @click.option('--index_name', '-i', default="bbuy_products", help="The name of the index to write to")
-@click.option('--workers', '-w', default=8, help="The number of workers to use to process files")
+@click.option('--workers', '-w', default=5, help="The number of workers to use to process files")
 def main(source_dir: str, index_name: str, workers: int):
 
     files = glob.glob(source_dir + "/*.xml")
@@ -131,3 +161,7 @@ def main(source_dir: str, index_name: str, workers: int):
 
 if __name__ == "__main__":
     main()
+    # source_dir='/workspace/datasets/product_data/products'
+    # index_name='test2'
+    # workers=1
+    # main(source_dir, index_name, workers)
