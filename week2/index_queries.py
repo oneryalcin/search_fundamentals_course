@@ -85,4 +85,5 @@ def main(source_file: str, index_name: str):
     logger.info(f'Done indexing {df.shape[0]} records. Total time: {((toc-tic)/60):0.3f} mins.')
 
 if __name__ == "__main__":
+    # main(source_file='/workspace/datasets/train.csv', index_name='test')
     main()
