@@ -198,7 +198,6 @@ def add_click_priors(query_obj, user_query, priors_gb):
                     term = f'{sku}^{rate} '
                     click_prior += term
 
-            # click_prior = " ".join([f'{sku}^{rate}' for sku,rate in click_by_sku_rate_filtered.items()])
                     
             if click_prior != "":
                 # Implement a query object that matches on the ID or SKU with weights of
