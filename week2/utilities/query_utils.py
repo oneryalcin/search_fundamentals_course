@@ -159,16 +159,46 @@ def create_query(user_query, filters, sort="_score", sortDir="desc", size=10, in
 # Give a user query from the UI and the query object we've built so far, adding in spelling suggestions
 def add_spelling_suggestions(query_obj, user_query):
     #### W2, L2, S1
-    print("TODO: IMPLEMENT ME")
-    #query_obj["suggest"] = {
-    #    "text": user_query,
-    #    "phrase_suggest": {
+    query_object["suggest"] = {
+    "text": user_query,
+        "phrase_suggest":{
+            "phrase":{
+                "field":"suggest.trigrams",
+                "max_errors":3,
+                "direct_generator":[
+                    {
+                    "field":"suggest.trigrams",
+                    "min_word_length":2,
+                    "suggest_mode":"popular"
+                    }
+                ],
+                "collate":{
+                    "query":{
+                    "source":{
+                        "match_phrase":{
+                            "{{field_name}}":"{{suggestion}}"
+                        }
+                    }
+                    },
+                    "params":{
+                        "field_name":"name"
+                    }
+                },
+                "highlight":{
+                    "pre_tag":"<em>",
+                    "post_tag":"</em>"
+                }
+            }
+        },
+        "text_suggest":{
+            "term":{
+                "field":"suggest.text",
+                "min_word_length":2,
+                "suggest_mode":"popular"
+            }
+        }
+    }
 
-    #    },
-    #    "term_suggest": {
-
-    #    }
-    #}
 
 
 # Given the user query from the UI, the query object we've built so far and a Pandas data GroupBy data frame,
@@ -180,8 +210,6 @@ def add_click_priors(query_obj, user_query, priors_gb):
         if prior_clicks_for_query is not None and len(prior_clicks_for_query) > 0:
             click_prior = ""
             #### W2, L1, S1
-            # Create a string object of SKUs and weights that will boost documents matching the SKU
-            print("TODO: Implement me")
             
             # Number of queries made using this keyword
             total_cnt = prior_clicks_for_query.shape[0]
@@ -206,7 +234,7 @@ def add_click_priors(query_obj, user_query, priors_gb):
                     "query_string": {
                         "query": click_prior,
                         "fields": ["sku"],
-                        "boost": 1000
+                        "boost": 2000
                      }
                  }
                 if click_prior_query_obj is not None:

@@ -54,7 +54,7 @@
           }
         }
       },
-      "completion": {
+      "suggest": {
         "type": "completion",
         "fields": {
           "trigrams": {
