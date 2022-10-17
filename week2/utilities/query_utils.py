@@ -182,9 +182,26 @@ def add_click_priors(query_obj, user_query, priors_gb):
             #### W2, L1, S1
             # Create a string object of SKUs and weights that will boost documents matching the SKU
             print("TODO: Implement me")
+            
+            # Number of queries made using this keyword
+            total_cnt = prior_clicks_for_query.shape[0]
+
+            # Count by SKU
+            # Example [{11114133: 0.004964}, {1148518: 0.000199}]
+            click_by_sku_rate = (prior_clicks_for_query.groupby('sku')['sku'].count()/total_cnt).to_dict()
+
+            click_prior = " ".join([f'{sku}^{sku_search_rate}' for sku,sku_search_rate in click_by_sku_rate.items()])
+                    
             if click_prior != "":
-                click_prior_query_obj = None # Implement a query object that matches on the ID or SKU with weights of
+                # Implement a query object that matches on the ID or SKU with weights of
                 # This may feel like cheating, but it's really not, esp. in ecommerce where you have all this prior data,
+                click_prior_query_obj = {
+                    "query_string": {
+                        "query": click_prior,
+                        "fields": ["sku"],
+                        "boost": 1000
+                     }
+                 }
                 if click_prior_query_obj is not None:
                     query_obj["query"]["function_score"]["query"]["bool"]["should"].append(click_prior_query_obj)
     except KeyError as ke:
