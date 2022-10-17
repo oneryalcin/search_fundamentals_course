@@ -62,10 +62,41 @@ def autocomplete():
         prefix = request.args.get("prefix")
         print(f"Prefix: {prefix}")
         if prefix is not None:
-            type = request.args.get("type", "queries") # If type == queries, this is an autocomplete request, else if products, it's an instant search request.
+            query_type = request.args.get("type", "queries") # If type == queries, this is an autocomplete request, else if products, it's an instant search request.
             ##### W2, L3, S1
-            search_response = None
-            print("TODO: implement autocomplete AND instant search")
+            if query_type == 'queries':
+                query_ = {
+                    "suggest": {
+                        "autocomplete":{
+                            "prefix": prefix,
+                            "completion":{
+                                "field":"suggest",
+                                "skip_duplicates": True
+                            }
+                        }
+                    }
+                }
+            elif query_type == 'products':
+                query_ = {
+                    "suggest": {
+                        "autocomplete":{
+                            "prefix": prefix,
+                            "completion":{
+                                "field":"suggest",
+                                "skip_duplicates": True
+                            }
+                        }
+                    }
+                }
+            else:
+                raise ValueError(f"Wrong query type, expected 'queries' or 'products' got {query_type}")
+            
+            opensearch = get_opensearch()
+            search_response = opensearch.search(
+                body=query_, 
+                index="bbuy_products" if type=="products" else "bbuy_queries"
+            )
+            
             if (search_response and search_response['suggest']['autocomplete'] and search_response['suggest']['autocomplete'][0]['length'] > 0): # just a query response
                 results = search_response['suggest']['autocomplete'][0]['options']
     print(f"Results: {results}")
@@ -125,7 +156,10 @@ def query():
         query_obj = qu.create_query(user_query,  filters, sort, sortDir, size=20)
         #### W2, L1, S2
 
+        qu.add_click_priors(query_obj, user_query, prior_clicks)
+
         ##### W2, L2, S2
+        qu.add_spelling_suggestions(query_obj, user_query)
 
     else:
         query_obj = qu.create_query("*", "", [], sort, sortDir, size=100)
