@@ -189,8 +189,16 @@ def add_click_priors(query_obj, user_query, priors_gb):
             # Count by SKU
             # Example [{11114133: 0.004964}, {1148518: 0.000199}]
             click_by_sku_rate = (prior_clicks_for_query.groupby('sku')['sku'].count()/total_cnt).to_dict()
+            
+            # filter important ones
+            click_prior = ""
+            for sku, rate in click_by_sku_rate.items():
+                rate = round(rate,3)
+                if rate > 0.001:
+                    term = f'{sku}^{rate} '
+                    click_prior += term
 
-            click_prior = " ".join([f'{sku}^{sku_search_rate}' for sku,sku_search_rate in click_by_sku_rate.items()])
+            # click_prior = " ".join([f'{sku}^{rate}' for sku,rate in click_by_sku_rate_filtered.items()])
                     
             if click_prior != "":
                 # Implement a query object that matches on the ID or SKU with weights of
