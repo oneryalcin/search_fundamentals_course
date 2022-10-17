@@ -110,7 +110,8 @@ def query():
         qu.add_click_priors(query_obj, user_query, prior_clicks)
 
         ##### W2, L2, S2
-        print("Plain ol q: %s" % query_obj)
+        qu.add_spelling_suggestions(query_obj, user_query)
+
     elif request.method == 'GET':  # Handle the case where there is no query or just loading the page
         user_query = request.args.get("query", "*")
         filters_input = request.args.getlist("filter.name")
